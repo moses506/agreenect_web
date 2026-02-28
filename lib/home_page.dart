@@ -120,7 +120,7 @@ class _HomePageState extends State<HomePage> {
 
             // ✅ UPDATED DYNAMIC SECTIONS
             const DynamicAchievementsSection(), // Was: AchievementsSection()
-            const DynamicTeamSection(), // Was: TeamSection()
+            const TeamSectionEditor(), // Was: TeamSection()
             // These remain the same for now
             const PartnersSection(),
 

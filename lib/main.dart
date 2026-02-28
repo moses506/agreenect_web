@@ -34,10 +34,10 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       routes: {
-        '/': (context) => const AdminPanel(),
+        // '/': (context) => const AdminPanel(),
         '/seed': (context) => SeedDataPage(),
       },
-      // home: AgreeNectApp(),
+      home: AgreeNectApp(),
     );
   }
 }

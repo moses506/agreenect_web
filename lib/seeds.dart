@@ -16,6 +16,11 @@ class _SeedDataPageState extends State<SeedDataPage> {
   String _status = 'Ready to seed database';
   final List<String> _logs = [];
 
+  // ── Admin credentials (change before going live!) ──────────────────────────
+  static const String _adminEmail = 'admin@agreenect.com';
+  static const String _adminPassword = 'Admin@123'; // Change this to a strong password before going live!
+  // ──────────────────────────────────────────────────────────────────────────
+
   void _addLog(String message) {
     setState(() {
       _logs.add(message);
@@ -33,6 +38,16 @@ class _SeedDataPageState extends State<SeedDataPage> {
 
     try {
       _addLog('🌱 Starting database seed...');
+
+      // ── Admin Credentials ─────────────────────────────────────────────────
+      _addLog('Creating admin credentials...');
+      await firestore.collection('admin').doc('credentials').set({
+        'email': _adminEmail,
+        'password': _adminPassword,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      _addLog('✅ Admin credentials created (email: $_adminEmail)');
+      // ─────────────────────────────────────────────────────────────────────
 
       // Hero Section
       _addLog('Creating hero_section...');
@@ -212,81 +227,75 @@ Since our inception, we have worked tirelessly to bridge the gap between traditi
       _addLog('✅ Achievements section created');
 
       // Team Section
-      // Just the corrected team section for your seeder
-
-// Replace the team_section part in your seeds.dart file with this:
-
-// Team Section
-_addLog('Creating team_section...');
-await firestore.collection('sections').doc('team_section').set({
-  'order': 9,
-  'visible': true,
-  'title': 'Meet Our Team',
-  'subtitle': 'The people behind Agreenect\'s success',
-  'members': [
-    {
-      'name': 'David Chapoloko',
-      'role': 'CEO & Founder',
-      'bio': 'Visionary leader driving agricultural innovation in Zambia',
-      'image': 'https://firebasestorage.googleapis.com/v0/b/agreenect-d4c47.appspot.com/o/team%2Fdavid.jpg?alt=media',
-      'social': {
-        'linkedin': 'https://linkedin.com',
-        'email': 'david@agreenect.com',
-      },
-    },
-    {
-      'name': 'Contance Mubanga',
-      'role': 'Financial & Admin Lead',
-      'bio': 'Expert in financial management and administrative operations',
-      'image': 'https://firebasestorage.googleapis.com/v0/b/agreenect-d4c47.appspot.com/o/team%2Fcontance.jpg?alt=media',
-      'social': {
-        'linkedin': 'https://linkedin.com',
-        'email': 'contance@agreenect.com',
-      },
-    },
-    {
-      'name': 'Moses Mpande',
-      'role': 'Technical/ Developer',
-      'bio': 'Tech innovator building digital solutions for agriculture',
-      'image': 'https://firebasestorage.googleapis.com/v0/b/agreenect-d4c47.appspot.com/o/team%2Fmoses.jpg?alt=media',
-      'social': {
-        'linkedin': 'https://linkedin.com',
-        'email': 'moses@agreenect.com',
-      },
-    },
-    {
-      'name': 'Kunda Nyirongo',
-      'role': 'Business Development',
-      'bio': 'Strategic partnerships and business growth specialist',
-      'image': 'https://firebasestorage.googleapis.com/v0/b/agreenect-d4c47.appspot.com/o/team%2Fkunda.jpg?alt=media',
-      'social': {
-        'linkedin': 'https://linkedin.com',
-        'email': 'kunda@agreenect.com',
-      },
-    },
-    {
-      'name': 'Kena Chibuye',
-      'role': 'Partnership & Outreach',
-      'bio': 'Building connections with farmers and stakeholders',
-      'image': 'https://firebasestorage.googleapis.com/v0/b/agreenect-d4c47.appspot.com/o/team%2Fkena.jpg?alt=media',
-      'social': {
-        'linkedin': 'https://linkedin.com',
-        'email': 'kena@agreenect.com',
-      },
-    },
-    {
-      'name': 'Celcilia Kuasa',
-      'role': 'Procurement Officer',
-      'bio': 'Managing resources and procurement operations',
-      'image': 'https://firebasestorage.googleapis.com/v0/b/agreenect-d4c47.appspot.com/o/team%2Fcelcilia.jpg?alt=media',
-      'social': {
-        'linkedin': 'https://linkedin.com',
-        'email': 'celcilia@agreenect.com',
-      },
-    },
-  ],
-});
-_addLog('✅ Team section created');
+      _addLog('Creating team_section...');
+      await firestore.collection('sections').doc('team_section').set({
+        'order': 9,
+        'visible': true,
+        'title': 'Meet Our Team',
+        'subtitle': 'The people behind Agreenect\'s success',
+        'members': [
+          {
+            'name': 'David Chapoloko',
+            'role': 'CEO & Founder',
+            'bio': 'Visionary leader driving agricultural innovation in Zambia',
+            'image': 'https://firebasestorage.googleapis.com/v0/b/agreenect-d4c47.appspot.com/o/team%2Fdavid.jpg?alt=media',
+            'social': {
+              'linkedin': 'https://linkedin.com',
+              'email': 'david@agreenect.com',
+            },
+          },
+          {
+            'name': 'Contance Mubanga',
+            'role': 'Financial & Admin Lead',
+            'bio': 'Expert in financial management and administrative operations',
+            'image': 'https://firebasestorage.googleapis.com/v0/b/agreenect-d4c47.appspot.com/o/team%2Fcontance.jpg?alt=media',
+            'social': {
+              'linkedin': 'https://linkedin.com',
+              'email': 'contance@agreenect.com',
+            },
+          },
+          {
+            'name': 'Moses Mpande',
+            'role': 'Technical/ Developer',
+            'bio': 'Tech innovator building digital solutions for agriculture',
+            'image': 'https://firebasestorage.googleapis.com/v0/b/agreenect-d4c47.appspot.com/o/team%2Fmoses.jpg?alt=media',
+            'social': {
+              'linkedin': 'https://linkedin.com',
+              'email': 'moses@agreenect.com',
+            },
+          },
+          {
+            'name': 'Kunda Nyirongo',
+            'role': 'Business Development',
+            'bio': 'Strategic partnerships and business growth specialist',
+            'image': 'https://firebasestorage.googleapis.com/v0/b/agreenect-d4c47.appspot.com/o/team%2Fkunda.jpg?alt=media',
+            'social': {
+              'linkedin': 'https://linkedin.com',
+              'email': 'kunda@agreenect.com',
+            },
+          },
+          {
+            'name': 'Kena Chibuye',
+            'role': 'Partnership & Outreach',
+            'bio': 'Building connections with farmers and stakeholders',
+            'image': 'https://firebasestorage.googleapis.com/v0/b/agreenect-d4c47.appspot.com/o/team%2Fkena.jpg?alt=media',
+            'social': {
+              'linkedin': 'https://linkedin.com',
+              'email': 'kena@agreenect.com',
+            },
+          },
+          {
+            'name': 'Celcilia Kuasa',
+            'role': 'Procurement Officer',
+            'bio': 'Managing resources and procurement operations',
+            'image': 'https://firebasestorage.googleapis.com/v0/b/agreenect-d4c47.appspot.com/o/team%2Fcelcilia.jpg?alt=media',
+            'social': {
+              'linkedin': 'https://linkedin.com',
+              'email': 'celcilia@agreenect.com',
+            },
+          },
+        ],
+      });
       _addLog('✅ Team section created');
 
       // Partners Section
@@ -367,12 +376,44 @@ _addLog('✅ Team section created');
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('✅ Success!'),
-            content: const Text('Your database has been seeded. You can now use the admin panel!'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Your database has been seeded successfully!'),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha:  0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.withValues(alpha:  0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '🔐 Admin Login Credentials',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 6),
+                      Text('Email: $_adminEmail'),
+                      Text('Password: $_adminPassword'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '⚠️ Please change your password after first login.',
+                  style: TextStyle(color: Colors.orange, fontSize: 12),
+                ),
+              ],
+            ),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  Navigator.pop(context); // Go back to home
+                  Navigator.pop(context);
                 },
                 child: const Text('Done'),
               ),
@@ -425,12 +466,25 @@ _addLog('✅ Team section created');
               ),
               const SizedBox(height: 16),
               const Text(
-                'This will create all sections. Only run once!',
+                'This will create all sections + admin credentials. Only run once!',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey),
               ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha:  0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.withValues(alpha:  0.2)),
+                ),
+                child: Text(
+                  '🔐 Admin: $_adminEmail',
+                  style: const TextStyle(fontSize: 13, color: Colors.green),
+                ),
+              ),
               const SizedBox(height: 32),
-              
+
               if (_isSeeding)
                 Column(
                   children: [
@@ -454,7 +508,7 @@ _addLog('✅ Team section created');
                 ),
 
               const SizedBox(height: 32),
-              
+
               if (_logs.isNotEmpty)
                 Expanded(
                   child: Container(
