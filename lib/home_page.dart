@@ -90,14 +90,14 @@ class _HomePageState extends State<HomePage> {
       drawer: ResponsiveUtils.isMobile(context)
           ? MobileSidebar(onNavigate: _scrollToSection)
           : null,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.pushNamed(context, '/seed');
-        },
-        backgroundColor: Colors.orange,
-        icon: const Icon(Icons.cloud_upload),
-        label: const Text('Seed Database'),
-      ),
+      // floatingActionButton: FloatingActionButton.extended(
+      //   onPressed: () {
+      //     Navigator.pushNamed(context, '/seed');
+      //   },
+      //   backgroundColor: Colors.orange,
+      //   icon: const Icon(Icons.cloud_upload),
+      //   label: const Text('Seed Database'),
+      // ),
       body: SingleChildScrollView(
         controller: _scrollController,
         child: Column(
@@ -120,7 +120,7 @@ class _HomePageState extends State<HomePage> {
 
             // ✅ UPDATED DYNAMIC SECTIONS
             const DynamicAchievementsSection(), // Was: AchievementsSection()
-            const TeamSectionEditor(), // Was: TeamSection()
+            const TeamSection(), // Was: TeamSection()
             // These remain the same for now
             const PartnersSection(),
 
