@@ -1,5 +1,15 @@
+
+
 {
   "projects": {
     "default": "agreenect-d4c47"
+  },
+  "targets": {
+    "agreenect-d4c47": {
+      "hosting": {
+        "client": ["agreenect-d4c47"],
+        "admin":  ["agreenect-admin"]
+      }
+    }
   }
 }

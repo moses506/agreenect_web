@@ -2,6 +2,11 @@
 // lib/screens/Admin/admin_dashboard.dart
 // ============================================================================
 
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
+import 'dart:typed_data';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+
 import 'package:agreenect/screens/Admin/team_editor.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -291,6 +296,31 @@ class _NItem extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // TOPBAR
 // ─────────────────────────────────────────────────────────────────────────────
+// ── Section ID → URL anchor map ─────────────────────────────────────────────
+String _sectionAnchor(String sectionId) {
+  const anchors = {
+    'dashboard':            '',
+    'hero_section':         '',
+    'features_section':     '#features',
+    'about_section':        '#about',
+    'works_section':        '#works',
+    'mission_section':      '#mission',
+    'impact_section':       '#impact',
+    'stats_section':        '#stats',
+    'achievements_section': '#achievements',
+    'team_section':         '#team',
+    'partners_section':     '#partners',
+    'contact_section':      '#contact',
+  };
+  return anchors[sectionId] ?? '';
+}
+
+void _openPreview(String sectionId) {
+  const liveUrl = 'https://agreenecttechnologies.co.zm';
+  final anchor = _sectionAnchor(sectionId);
+  html.window.open('$liveUrl$anchor', '_blank');
+}
+
 class _TopBar extends StatelessWidget {
   final _Section section;
   const _TopBar({required this.section});
@@ -306,7 +336,12 @@ class _TopBar extends StatelessWidget {
       ])),
       _LiveBadge(),
       const SizedBox(width: 10),
-      _Btn(label: 'Preview', icon: Icons.open_in_new_rounded, ghost: true, onTap: () {}),
+      _Btn(
+        label: 'Preview',
+        icon: Icons.open_in_new_rounded,
+        ghost: true,
+        onTap: () => _openPreview(section.id),
+      ),
     ]),
   );
 }
@@ -859,6 +894,22 @@ class _HeroPreview extends StatelessWidget {
       ]))));
 }
 
+// =============================================================================
+// SHARED SCROLL HELPER
+// Call _scrollToBottom(controller) after setState adds a new item.
+// =============================================================================
+void _scrollToBottom(ScrollController sc) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (sc.hasClients) {
+      sc.animateTo(
+        sc.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOut,
+      );
+    }
+  });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // FEATURES EDITOR
 // ─────────────────────────────────────────────────────────────────────────────
@@ -868,7 +919,9 @@ class FeaturesEditor extends StatefulWidget {
 }
 class _FeaturesEditorState extends State<FeaturesEditor> {
   List<Map<String,dynamic>> _items = []; bool _vis = true, _loading = true, _saving = false;
+  final _sc = ScrollController();
   @override void initState() { super.initState(); _load(); }
+  @override void dispose() { _sc.dispose(); super.dispose(); }
   Future<void> _load() async {
     final doc = await FirebaseFirestore.instance.collection('sections').doc('features_section').get();
     if (doc.exists) { final d = doc.data()!; setState(() { _items = List<Map<String,dynamic>>.from(d['items'] ?? []); _vis = d['visible'] ?? true; }); }
@@ -887,16 +940,16 @@ class _FeaturesEditorState extends State<FeaturesEditor> {
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator(color: _C.leaf));
-    return SingleChildScrollView(child: Column(children: [
+    return SingleChildScrollView(controller: _sc, child: Column(children: [
       _PageHeader(title: 'Features Section', sub: 'Showcase your key features', vis: _vis, onVis: (v) => setState(() => _vis = v),
         actions: [
-          _Btn(label: '+ Add', icon: Icons.add_rounded, ghost: true, onTap: () => setState(() => _items.add({'title':'','description':'','icon':''}))),
+          _Btn(label: '+ Add', icon: Icons.add_rounded, ghost: true, onTap: () { setState(() => _items.add({'title':'','description':'','icon':''})); _scrollToBottom(_sc); }),
           const SizedBox(width: 10),
           _Btn(label: _saving ? 'Saving…' : 'Save', icon: Icons.save_outlined, onTap: _saving ? () {} : _save),
         ]),
       Padding(padding: const EdgeInsets.fromLTRB(28, 0, 28, 28), child: _items.isEmpty
         ? _Empty(icon: Icons.auto_awesome_outlined, title: 'No features yet', sub: 'Add your first feature', btn: 'Add Feature',
-            onTap: () => setState(() => _items.add({'title':'','description':'','icon':''})))
+            onTap: () { setState(() => _items.add({'title':'','description':'','icon':''})); _scrollToBottom(_sc); })
         : Column(children: _items.asMap().entries.map((e) { final i = e.key; return Padding(padding: const EdgeInsets.only(bottom: 14), child: _Card(child: Column(children: [
             Row(children: [
               Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: _C.leaf.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
@@ -929,8 +982,9 @@ class AboutEditor extends StatefulWidget {
 class _AboutEditorState extends State<AboutEditor> {
   final _title = TextEditingController(); final _content = TextEditingController();
   List<Map<String,dynamic>> _stats = []; bool _vis = true, _loading = true, _saving = false;
+  final _sc = ScrollController();
   @override void initState() { super.initState(); _load(); }
-  @override void dispose() { _title.dispose(); _content.dispose(); super.dispose(); }
+  @override void dispose() { _title.dispose(); _content.dispose(); _sc.dispose(); super.dispose(); }
   Future<void> _load() async {
     final doc = await FirebaseFirestore.instance.collection('sections').doc('about_section').get();
     if (doc.exists) { final d = doc.data()!; setState(() { _title.text = d['title'] ?? ''; _content.text = d['content'] ?? ''; _stats = List<Map<String,dynamic>>.from(d['stats'] ?? []); _vis = d['visible'] ?? true; }); }
@@ -949,7 +1003,7 @@ class _AboutEditorState extends State<AboutEditor> {
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator(color: _C.leaf));
-    return SingleChildScrollView(child: Column(children: [
+    return SingleChildScrollView(controller: _sc, child: Column(children: [
       _PageHeader(title: 'About Us', sub: 'Tell your company story', vis: _vis, onVis: (v) => setState(() => _vis = v),
         actions: [_Btn(label: _saving ? 'Saving…' : 'Save', icon: Icons.save_outlined, onTap: _saving ? () {} : _save)]),
       Padding(padding: const EdgeInsets.fromLTRB(28, 0, 28, 28), child: Column(children: [
@@ -960,7 +1014,7 @@ class _AboutEditorState extends State<AboutEditor> {
         ])),
         const SizedBox(height: 18),
         _Card(title: 'Key Statistics', icon: Icons.bar_chart_rounded,
-          trailing: _Btn(label: '+ Add Stat', icon: Icons.add_rounded, ghost: true, onTap: () => setState(() => _stats.add({'label':'','value':''}))),
+          trailing: _Btn(label: '+ Add Stat', icon: Icons.add_rounded, ghost: true, onTap: () { setState(() => _stats.add({'label':'','value':''})); _scrollToBottom(_sc); }),
           child: _stats.isEmpty
             ? Center(child: Padding(padding: const EdgeInsets.symmetric(vertical: 16), child: Text('No stats yet.', style: TextStyle(color: _C.ash))))
             : Column(children: _stats.asMap().entries.map((e) { final i = e.key; return Padding(padding: const EdgeInsets.only(bottom: 10), child: Row(children: [
@@ -979,58 +1033,412 @@ class _AboutEditorState extends State<AboutEditor> {
 // ─────────────────────────────────────────────────────────────────────────────
 // WORKS EDITOR
 // ─────────────────────────────────────────────────────────────────────────────
+// =============================================================================
+// WORKS EDITOR — with Firebase Storage image upload
+// =============================================================================
 class WorksEditor extends StatefulWidget {
   const WorksEditor({super.key});
   @override State<WorksEditor> createState() => _WorksEditorState();
 }
+
 class _WorksEditorState extends State<WorksEditor> {
-  List<Map<String,dynamic>> _projects = []; bool _vis = true, _loading = true, _saving = false;
-  @override void initState() { super.initState(); _load(); }
+  List<Map<String, dynamic>> _projects = [];
+  // Track upload progress per project index: null = idle, 0.0-1.0 = uploading
+  final Map<int, double?> _uploadProgress = {};
+  bool _vis = true, _loading = true, _saving = false;
+  final _sc = ScrollController();
+
+  @override
+  void initState() { super.initState(); _load(); }
+
   Future<void> _load() async {
-    final doc = await FirebaseFirestore.instance.collection('sections').doc('works_section').get();
-    if (doc.exists) { final d = doc.data()!; setState(() { _projects = List<Map<String,dynamic>>.from(d['projects'] ?? []); _vis = d['visible'] ?? true; }); }
+    final doc = await FirebaseFirestore.instance
+        .collection('sections').doc('works_section').get();
+    if (doc.exists) {
+      final d = doc.data()!;
+      setState(() {
+        _projects = List<Map<String, dynamic>>.from(d['projects'] ?? []);
+        _vis = d['visible'] ?? true;
+      });
+    }
     setState(() => _loading = false);
   }
+
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      await FirebaseFirestore.instance.collection('sections').doc('works_section').set({
-        'order': 4, 'visible': _vis, 'title': 'Our Projects', 'subtitle': 'Innovative solutions making a difference', 'projects': _projects, 'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      await FirebaseFirestore.instance
+          .collection('sections').doc('works_section')
+          .set({
+            'order': 4,
+            'visible': _vis,
+            'title': 'Our Works in Action',
+            'subtitle': 'See how we are making a difference in communities across Zambia',
+            'projects': _projects,
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
       if (mounted) _snack(context, '✓ Works saved!');
-    } catch (e) { if (mounted) _snack(context, 'Error: $e', err: true); }
-    finally { setState(() => _saving = false); }
+    } catch (e) {
+      if (mounted) _snack(context, 'Error: $e', err: true);
+    } finally {
+      setState(() => _saving = false);
+    }
   }
+
+  /// Opens the browser file picker using the same pattern as the team editor.
+  void _pickAndUpload(int index) {
+    final input = html.FileUploadInputElement()
+      ..accept = 'image/*'
+      ..style.display = 'none';
+    html.document.body!.append(input);
+    input.click();
+
+    input.onChange.listen((event) async {
+      final files = input.files;
+      if (files == null || files.isEmpty) { input.remove(); return; }
+
+      final file = files[0];
+      if (!file.type.startsWith('image/')) {
+        if (mounted) _snack(context, 'Please select an image file', err: true);
+        input.remove();
+        return;
+      }
+
+      final reader = html.FileReader();
+      reader.readAsArrayBuffer(file);
+
+      reader.onLoadEnd.listen((event) async {
+        final bytes = reader.result as Uint8List;
+        setState(() => _uploadProgress[index] = 0.0);
+
+        try {
+          final ext      = file.name.contains('.') ? file.name.split('.').last : 'jpg';
+          final fileName = 'works/${DateTime.now().millisecondsSinceEpoch}.$ext';
+          final ref      = firebase_storage.FirebaseStorage.instance.ref(fileName);
+
+          final uploadTask = ref.putData(
+            bytes,
+            firebase_storage.SettableMetadata(contentType: file.type),
+          );
+
+          // Track progress
+          uploadTask.snapshotEvents.listen((snap) {
+            final progress = snap.bytesTransferred / snap.totalBytes;
+            if (mounted) setState(() => _uploadProgress[index] = progress);
+          });
+
+          await uploadTask;
+          final url = await ref.getDownloadURL();
+
+          setState(() {
+            _projects[index]['image'] = url;
+            _uploadProgress[index] = null;
+          });
+          if (mounted) _snack(context, '✓ Image uploaded!');
+        } catch (e) {
+          setState(() => _uploadProgress[index] = null);
+          if (mounted) _snack(context, 'Upload failed: $e', err: true);
+        } finally {
+          input.remove();
+        }
+      });
+    });
+  }
+
+  void _addProject() {
+    setState(() => _projects.add({'title': '', 'description': '', 'image': '', 'category': ''}));
+    _scrollToBottom(_sc);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator(color: _C.leaf));
-    return SingleChildScrollView(child: Column(children: [
-      _PageHeader(title: 'Our Works', sub: 'Showcase your projects and case studies', vis: _vis, onVis: (v) => setState(() => _vis = v),
-        actions: [
-          _Btn(label: '+ Add Project', icon: Icons.add_rounded, ghost: true, onTap: () => setState(() => _projects.add({'title':'','description':'','image':'','category':''}))),
-          const SizedBox(width: 10),
-          _Btn(label: _saving ? 'Saving…' : 'Save', icon: Icons.save_outlined, onTap: _saving ? () {} : _save),
-        ]),
-      Padding(padding: const EdgeInsets.fromLTRB(28, 0, 28, 28), child: _projects.isEmpty
-        ? _Empty(icon: Icons.work_outline_rounded, title: 'No projects yet', sub: 'Showcase your work', btn: 'Add Project',
-            onTap: () => setState(() => _projects.add({'title':'','description':'','image':'','category':''})))
-        : Column(children: _projects.asMap().entries.map((e) { final i = e.key; return Padding(padding: const EdgeInsets.only(bottom: 14), child: _Card(child: Column(children: [
-            Row(children: [Text('Project ${i+1}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _C.ink)), const Spacer(),
-              IconButton(icon: const Icon(Icons.delete_outline_rounded, color: _C.rose, size: 18), onPressed: () => setState(() => _projects.removeAt(i)))]),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(child: _Field(label: 'TITLE', hint: 'Smart Irrigation System', init: _projects[i]['title'], onChange: (v) => _projects[i]['title'] = v, req: true)),
-              const SizedBox(width: 14),
-              Expanded(child: _Field(label: 'CATEGORY', hint: 'Technology', init: _projects[i]['category'], onChange: (v) => _projects[i]['category'] = v)),
-            ]),
-            const SizedBox(height: 12),
-            _Field(label: 'IMAGE URL', hint: 'https://…', init: _projects[i]['image'], onChange: (v) => _projects[i]['image'] = v),
-            const SizedBox(height: 12),
-            _Field(label: 'DESCRIPTION', hint: 'Project description…', init: _projects[i]['description'], onChange: (v) => _projects[i]['description'] = v, lines: 3),
-          ]))); }).toList()),
-      ),
-    ]));
+    return SingleChildScrollView(
+      controller: _sc,
+      child: Column(children: [
+        _PageHeader(
+          title: 'Our Works',
+          sub: 'Showcase your projects — upload photos directly from your PC',
+          vis: _vis,
+          onVis: (v) => setState(() => _vis = v),
+          actions: [
+            _Btn(label: '+ Add Project', icon: Icons.add_rounded, ghost: true, onTap: _addProject),
+            const SizedBox(width: 10),
+            _Btn(label: _saving ? 'Saving…' : 'Save', icon: Icons.save_outlined, onTap: _saving ? () {} : _save),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(28, 0, 28, 28),
+          child: _projects.isEmpty
+              ? _Empty(
+                  icon: Icons.work_outline_rounded,
+                  title: 'No projects yet',
+                  sub: 'Add your first project and upload a photo',
+                  btn: 'Add Project',
+                  onTap: _addProject,
+                )
+              : Column(
+                  children: _projects.asMap().entries.map((e) {
+                    final i = e.key;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _WorkProjectCard(
+                        index: i,
+                        project: _projects[i],
+                        uploadProgress: _uploadProgress[i],
+                        onChanged: (key, val) => setState(() => _projects[i][key] = val),
+                        onDelete: () => setState(() { _projects.removeAt(i); _uploadProgress.remove(i); }),
+                        onPickImage: () => _pickAndUpload(i),
+                      ),
+                    );
+                  }).toList(),
+                ),
+        ),
+      ]),
+    );
   }
+}
+
+// ── Individual project card with image upload ─────────────────────────────────
+class _WorkProjectCard extends StatelessWidget {
+  final int index;
+  final Map<String, dynamic> project;
+  final double? uploadProgress;
+  final void Function(String key, String val) onChanged;
+  final VoidCallback onDelete;
+  final VoidCallback onPickImage;
+
+  const _WorkProjectCard({
+    required this.index,
+    required this.project,
+    required this.uploadProgress,
+    required this.onChanged,
+    required this.onDelete,
+    required this.onPickImage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final imgUrl = (project['image'] ?? '').toString();
+    final isUploading = uploadProgress != null;
+
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header row ───────────────────────────────────────────────
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: _C.leaf.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                'Project ${index + 1}',
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: _C.leaf),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                project['title']?.isNotEmpty == true ? project['title'] : 'New Project',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _C.ink),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded, color: _C.rose, size: 18),
+              onPressed: onDelete,
+            ),
+          ]),
+          const SizedBox(height: 14),
+
+          // ── Main content row: image left, fields right ───────────────
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Image picker column
+            SizedBox(
+              width: 200,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('PHOTO', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _C.ash, letterSpacing: 0.5)),
+                  const SizedBox(height: 6),
+
+                  // Image preview / upload area
+                  GestureDetector(
+                    onTap: isUploading ? null : onPickImage,
+                    child: Container(
+                      width: 200,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        color: _C.paper,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isUploading ? _C.leaf : _C.mist,
+                          width: isUploading ? 2 : 1.5,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(9),
+                        child: isUploading
+                            ? _UploadingIndicator(progress: uploadProgress!)
+                            : imgUrl.isNotEmpty
+                                ? Stack(fit: StackFit.expand, children: [
+                                    Image.network(imgUrl, fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => _UploadPlaceholder(onTap: onPickImage)),
+                                    // Replace overlay on hover
+                                    Positioned(
+                                      bottom: 0, left: 0, right: 0,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 6),
+                                        color: Colors.black.withValues(alpha: 0.5),
+                                        child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                          Icon(Icons.edit_rounded, color: Colors.white, size: 12),
+                                          SizedBox(width: 5),
+                                          Text('Replace', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+                                        ]),
+                                      ),
+                                    ),
+                                  ])
+                                : _UploadPlaceholder(onTap: onPickImage),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Upload button
+                  SizedBox(
+                    width: 200,
+                    child: Material(
+                      color: isUploading ? _C.mist : _C.leaf.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: isUploading ? null : onPickImage,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 9),
+                          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            Icon(
+                              isUploading ? Icons.hourglass_top_rounded : Icons.upload_rounded,
+                              size: 15,
+                              color: isUploading ? _C.ash : _C.leaf,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              isUploading
+                                  ? 'Uploading ${(uploadProgress! * 100).round()}%…'
+                                  : imgUrl.isNotEmpty ? 'Replace Image' : 'Upload from PC',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: isUploading ? _C.ash : _C.leaf,
+                              ),
+                            ),
+                          ]),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Optional: keep URL field for pasting links too
+                  const SizedBox(height: 10),
+                  _Field(
+                    label: 'OR PASTE URL',
+                    hint: 'https://…',
+                    init: imgUrl,
+                    onChange: (v) => onChanged('image', v),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 20),
+
+            // Fields column
+            Expanded(
+              child: Column(children: [
+                Row(children: [
+                  Expanded(child: _Field(
+                    label: 'TITLE',
+                    hint: 'Farmer Training Session',
+                    init: project['title'],
+                    onChange: (v) => onChanged('title', v),
+                    req: true,
+                  )),
+                  const SizedBox(width: 14),
+                  Expanded(child: _Field(
+                    label: 'CATEGORY',
+                    hint: 'Training',
+                    init: project['category'],
+                    onChange: (v) => onChanged('category', v),
+                  )),
+                ]),
+                const SizedBox(height: 12),
+                _Field(
+                  label: 'DESCRIPTION',
+                  hint: 'Brief description of what happened in this project…',
+                  init: project['description'],
+                  onChange: (v) => onChanged('description', v),
+                  lines: 5,
+                ),
+              ]),
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
+}
+
+class _UploadPlaceholder extends StatelessWidget {
+  final VoidCallback onTap;
+  const _UploadPlaceholder({required this.onTap});
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: _C.leaf.withValues(alpha: 0.1),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.add_photo_alternate_rounded, color: _C.leaf, size: 26),
+      ),
+      const SizedBox(height: 8),
+      const Text('Click to upload', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _C.leaf)),
+      const SizedBox(height: 2),
+      Text('JPG, PNG, WebP', style: TextStyle(fontSize: 10, color: _C.ash)),
+    ],
+  );
+}
+
+class _UploadingIndicator extends StatelessWidget {
+  final double progress;
+  const _UploadingIndicator({required this.progress});
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      SizedBox(
+        width: 48, height: 48,
+        child: CircularProgressIndicator(
+          value: progress,
+          strokeWidth: 4,
+          color: _C.leaf,
+          backgroundColor: _C.mist,
+        ),
+      ),
+      const SizedBox(height: 12),
+      Text(
+        '${(progress * 100).round()}%',
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _C.leaf),
+      ),
+      const SizedBox(height: 4),
+      Text('Uploading…', style: TextStyle(fontSize: 11, color: _C.ash)),
+    ],
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1043,8 +1451,9 @@ class MissionEditor extends StatefulWidget {
 class _MissionEditorState extends State<MissionEditor> {
   final _mission = TextEditingController(); final _vision = TextEditingController();
   List<Map<String,dynamic>> _values = []; bool _vis = true, _loading = true, _saving = false;
+  final _sc = ScrollController();
   @override void initState() { super.initState(); _load(); }
-  @override void dispose() { _mission.dispose(); _vision.dispose(); super.dispose(); }
+  @override void dispose() { _mission.dispose(); _vision.dispose(); _sc.dispose(); super.dispose(); }
   Future<void> _load() async {
     final doc = await FirebaseFirestore.instance.collection('sections').doc('mission_section').get();
     if (doc.exists) { final d = doc.data()!; setState(() { _mission.text = d['mission'] ?? ''; _vision.text = d['vision'] ?? ''; _values = List<Map<String,dynamic>>.from(d['values'] ?? []); _vis = d['visible'] ?? true; }); }
@@ -1063,7 +1472,7 @@ class _MissionEditorState extends State<MissionEditor> {
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator(color: _C.leaf));
-    return SingleChildScrollView(child: Column(children: [
+    return SingleChildScrollView(controller: _sc, child: Column(children: [
       _PageHeader(title: 'Mission', sub: 'Define your purpose and values', vis: _vis, onVis: (v) => setState(() => _vis = v),
         actions: [_Btn(label: _saving ? 'Saving…' : 'Save', icon: Icons.save_outlined, onTap: _saving ? () {} : _save)]),
       Padding(padding: const EdgeInsets.fromLTRB(28, 0, 28, 28), child: Column(children: [
@@ -1074,7 +1483,7 @@ class _MissionEditorState extends State<MissionEditor> {
         ])),
         const SizedBox(height: 18),
         _Card(title: 'Core Values', icon: Icons.star_outline_rounded,
-          trailing: _Btn(label: '+ Add Value', icon: Icons.add_rounded, ghost: true, onTap: () => setState(() => _values.add({'title':'','description':'','icon':''}))),
+          trailing: _Btn(label: '+ Add Value', icon: Icons.add_rounded, ghost: true, onTap: () { setState(() => _values.add({'title':'','description':'','icon':''})); _scrollToBottom(_sc); }),
           child: _values.isEmpty
             ? Center(child: Padding(padding: const EdgeInsets.symmetric(vertical: 16), child: Text('No values added yet.', style: TextStyle(color: _C.ash))))
             : Column(children: _values.asMap().entries.map((e) { final i = e.key; return Padding(padding: const EdgeInsets.only(bottom: 12), child: Row(children: [
@@ -1101,7 +1510,9 @@ class ImpactEditor extends StatefulWidget {
 }
 class _ImpactEditorState extends State<ImpactEditor> {
   List<Map<String,dynamic>> _stories = []; bool _vis = true, _loading = true, _saving = false;
+  final _sc = ScrollController();
   @override void initState() { super.initState(); _load(); }
+  @override void dispose() { _sc.dispose(); super.dispose(); }
   Future<void> _load() async {
     final doc = await FirebaseFirestore.instance.collection('sections').doc('impact_section').get();
     if (doc.exists) { final d = doc.data()!; setState(() { _stories = List<Map<String,dynamic>>.from(d['stories'] ?? []); _vis = d['visible'] ?? true; }); }
@@ -1120,16 +1531,16 @@ class _ImpactEditorState extends State<ImpactEditor> {
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator(color: _C.leaf));
-    return SingleChildScrollView(child: Column(children: [
+    return SingleChildScrollView(controller: _sc, child: Column(children: [
       _PageHeader(title: 'Impact', sub: 'Share farmer success stories', vis: _vis, onVis: (v) => setState(() => _vis = v),
         actions: [
-          _Btn(label: '+ Add Story', icon: Icons.add_rounded, ghost: true, onTap: () => setState(() => _stories.add({'farmer':'','location':'','story':'','image':''}))),
+          _Btn(label: '+ Add Story', icon: Icons.add_rounded, ghost: true, onTap: () { setState(() => _stories.add({'farmer':'','location':'','story':'','image':''})); _scrollToBottom(_sc); }),
           const SizedBox(width: 10),
           _Btn(label: _saving ? 'Saving…' : 'Save', icon: Icons.save_outlined, onTap: _saving ? () {} : _save),
         ]),
       Padding(padding: const EdgeInsets.fromLTRB(28, 0, 28, 28), child: _stories.isEmpty
         ? _Empty(icon: Icons.trending_up_rounded, title: 'No stories yet', sub: 'Add farmer impact stories', btn: 'Add Story',
-            onTap: () => setState(() => _stories.add({'farmer':'','location':'','story':'','image':''})))
+            onTap: () { setState(() => _stories.add({'farmer':'','location':'','story':'','image':''})); _scrollToBottom(_sc); })
         : Column(children: _stories.asMap().entries.map((e) { final i = e.key; return Padding(padding: const EdgeInsets.only(bottom: 14), child: _Card(child: Column(children: [
             Row(children: [Text('Story ${i+1}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _C.ink)), const Spacer(),
               IconButton(icon: const Icon(Icons.delete_outline_rounded, color: _C.rose, size: 18), onPressed: () => setState(() => _stories.removeAt(i)))]),
@@ -1158,7 +1569,9 @@ class StatsEditor extends StatefulWidget {
 }
 class _StatsEditorState extends State<StatsEditor> {
   List<Map<String,dynamic>> _stats = []; bool _vis = true, _loading = true, _saving = false;
+  final _sc = ScrollController();
   @override void initState() { super.initState(); _load(); }
+  @override void dispose() { _sc.dispose(); super.dispose(); }
   Future<void> _load() async {
     final doc = await FirebaseFirestore.instance.collection('sections').doc('stats_section').get();
     if (doc.exists) { final d = doc.data()!; setState(() { _stats = List<Map<String,dynamic>>.from(d['stats'] ?? []); _vis = d['visible'] ?? true; }); }
@@ -1177,16 +1590,16 @@ class _StatsEditorState extends State<StatsEditor> {
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator(color: _C.leaf));
-    return SingleChildScrollView(child: Column(children: [
+    return SingleChildScrollView(controller: _sc, child: Column(children: [
       _PageHeader(title: 'Statistics', sub: 'Edit your key numbers and metrics', vis: _vis, onVis: (v) => setState(() => _vis = v),
         actions: [
-          _Btn(label: '+ Add Stat', icon: Icons.add_rounded, ghost: true, onTap: () => setState(() => _stats.add({'label':'','value':'','icon':''}))),
+          _Btn(label: '+ Add Stat', icon: Icons.add_rounded, ghost: true, onTap: () { setState(() => _stats.add({'label':'','value':'','icon':''})); _scrollToBottom(_sc); }),
           const SizedBox(width: 10),
           _Btn(label: _saving ? 'Saving…' : 'Save', icon: Icons.save_outlined, onTap: _saving ? () {} : _save),
         ]),
       Padding(padding: const EdgeInsets.fromLTRB(28, 0, 28, 28), child: _stats.isEmpty
         ? _Empty(icon: Icons.bar_chart_rounded, title: 'No stats yet', sub: 'Add your impact numbers', btn: 'Add Stat',
-            onTap: () => setState(() => _stats.add({'label':'','value':'','icon':''})))
+            onTap: () { setState(() => _stats.add({'label':'','value':'','icon':''})); _scrollToBottom(_sc); })
         : _Card(child: Column(children: [
             Row(children: [
               Expanded(child: Text('ICON', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _C.ash))),
@@ -1221,7 +1634,9 @@ class AchievementsEditor extends StatefulWidget {
 }
 class _AchievementsEditorState extends State<AchievementsEditor> {
   List<Map<String,dynamic>> _items = []; bool _vis = true, _loading = true, _saving = false;
+  final _sc = ScrollController();
   @override void initState() { super.initState(); _load(); }
+  @override void dispose() { _sc.dispose(); super.dispose(); }
   Future<void> _load() async {
     final doc = await FirebaseFirestore.instance.collection('sections').doc('achievements_section').get();
     if (doc.exists) { final d = doc.data()!; setState(() { _items = List<Map<String,dynamic>>.from(d['achievements'] ?? []); _vis = d['visible'] ?? true; }); }
@@ -1240,7 +1655,7 @@ class _AchievementsEditorState extends State<AchievementsEditor> {
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator(color: _C.leaf));
-    return SingleChildScrollView(child: Column(children: [
+    return SingleChildScrollView(controller: _sc, child: Column(children: [
       _PageHeader(title: 'Achievements', sub: 'Highlight your milestones and awards', vis: _vis, onVis: (v) => setState(() => _vis = v),
         actions: [
           _Btn(label: '+ Add', icon: Icons.add_rounded, ghost: true, onTap: () => setState(() => _items.add({'year':'${DateTime.now().year}','title':'','description':''}))),
@@ -1282,7 +1697,9 @@ class PartnersEditor extends StatefulWidget {
 }
 class _PartnersEditorState extends State<PartnersEditor> {
   List<Map<String,dynamic>> _logos = []; bool _vis = true, _loading = true, _saving = false;
+  final _sc = ScrollController();
   @override void initState() { super.initState(); _load(); }
+  @override void dispose() { _sc.dispose(); super.dispose(); }
   Future<void> _load() async {
     final doc = await FirebaseFirestore.instance.collection('sections').doc('partners_section').get();
     if (doc.exists) { final d = doc.data()!; setState(() { _logos = List<Map<String,dynamic>>.from(d['logos'] ?? []); _vis = d['visible'] ?? true; }); }
@@ -1301,16 +1718,16 @@ class _PartnersEditorState extends State<PartnersEditor> {
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator(color: _C.leaf));
-    return SingleChildScrollView(child: Column(children: [
+    return SingleChildScrollView(controller: _sc, child: Column(children: [
       _PageHeader(title: 'Partners', sub: 'Manage partner logos and links', vis: _vis, onVis: (v) => setState(() => _vis = v),
         actions: [
-          _Btn(label: '+ Add Partner', icon: Icons.add_rounded, ghost: true, onTap: () => setState(() => _logos.add({'name':'','image':'','link':'#'}))),
+          _Btn(label: '+ Add Partner', icon: Icons.add_rounded, ghost: true, onTap: () { setState(() => _logos.add({'name':'','image':'','link':'#'})); _scrollToBottom(_sc); }),
           const SizedBox(width: 10),
           _Btn(label: _saving ? 'Saving…' : 'Save', icon: Icons.save_outlined, onTap: _saving ? () {} : _save),
         ]),
       Padding(padding: const EdgeInsets.fromLTRB(28, 0, 28, 28), child: _logos.isEmpty
         ? _Empty(icon: Icons.handshake_outlined, title: 'No partners yet', sub: 'Add your partner organisations', btn: 'Add Partner',
-            onTap: () => setState(() => _logos.add({'name':'','image':'','link':'#'})))
+            onTap: () { setState(() => _logos.add({'name':'','image':'','link':'#'})); _scrollToBottom(_sc); })
         : Column(children: _logos.asMap().entries.map((e) { final i = e.key; return Padding(padding: const EdgeInsets.only(bottom: 14), child: _Card(child: Column(children: [
             Row(children: [Text('Partner ${i+1}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _C.ink)), const Spacer(),
               IconButton(icon: const Icon(Icons.delete_outline_rounded, color: _C.rose, size: 18), onPressed: () => setState(() => _logos.removeAt(i)))]),

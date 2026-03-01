@@ -1,6 +1,13 @@
 [
   {
-    "origin": ["http://localhost:*", "https://agreenect-d4c47.web.app", "https://agreenect-d4c47.firebaseapp.com"],
+    "origin": [
+      "http://localhost:*",
+      "https://agreenect-d4c47.web.app",
+      "https://agreenect-d4c47.firebaseapp.com",
+      "https://agreenect-admin.web.app",
+      "https://agreenect-admin.firebaseapp.com",
+      "https://yourcustomdomain.com"
+    ],
     "method": ["GET", "POST", "PUT", "DELETE", "HEAD"],
     "maxAgeSeconds": 3600,
     "responseHeader": ["Content-Type", "Authorization", "Content-Length", "User-Agent"]

@@ -1,4 +1,3 @@
-
 import 'package:agreenect/home_page.dart';
 import 'package:agreenect/landing_page.dart';
 import 'package:agreenect/screens/Admin/admin_screen.dart';
@@ -7,6 +6,11 @@ import 'package:agreenect/seeds.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+
+// ── This flag is set at build time via --dart-define ─────────────────────────
+// true  → builds the admin panel
+// false → builds the client/landing page
+const bool kIsAdmin = bool.fromEnvironment('IS_ADMIN', defaultValue: false);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,8 +38,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
       ),
-      // AuthGate decides what screen to show on launch
-      home: const AuthGate(),
+      // ── Decides which app to show based on build flag ───────────────────
+      home: kIsAdmin ? const AuthGate() : const AgreeNectApp(),
       routes: {
         '/login':     (context) => const AdminLoginPage(),
         '/dashboard': (context) => const AdminDashboard(),
@@ -46,10 +50,7 @@ class MyApp extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AUTH GATE
-// Listens to Firebase auth state. If a user session already exists
-// (persisted from last login) they go straight to the dashboard.
-// Otherwise they land on the login page.
+// AUTH GATE  (admin only)
 // ─────────────────────────────────────────────────────────────────────────────
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -59,26 +60,20 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // ── Still waiting for Firebase to respond ──────────────────────────
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const _SplashScreen();
         }
-
-        // ── User is logged in → Dashboard ──────────────────────────────────
         if (snapshot.hasData && snapshot.data != null) {
-          return const AgreeNectApp();
+          return const AdminDashboard();
         }
-
-        // ── No session → Login ─────────────────────────────────────────────
         return const AdminLoginPage();
-        // return const AgreeNectApp();
       },
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SPLASH SCREEN (shown for ~1 second while Firebase checks auth state)
+// SPLASH SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
 class _SplashScreen extends StatelessWidget {
   const _SplashScreen();
@@ -86,7 +81,7 @@ class _SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Color(0xFF0F2419), // _C.deep
+      backgroundColor: Color(0xFF0F2419),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -106,7 +101,7 @@ class _SplashScreen extends StatelessWidget {
             Text(
               'Admin Panel',
               style: TextStyle(
-                color: Color(0xFF8A9E88), // _C.ash
+                color: Color(0xFF8A9E88),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 2,
@@ -117,7 +112,7 @@ class _SplashScreen extends StatelessWidget {
               width: 24,
               height: 24,
               child: CircularProgressIndicator(
-                color: Color(0xFF7FD17A), // _C.lime
+                color: Color(0xFF7FD17A),
                 strokeWidth: 2.5,
               ),
             ),
